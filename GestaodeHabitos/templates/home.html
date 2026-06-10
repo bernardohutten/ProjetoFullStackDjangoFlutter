@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}Minhas Atividades{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Minhas Atividades</h2>
+
+    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalNovaAtividade">
+        + Nova Atividade
+    </button>
+
+</div>
+
+{% if atividades %}
+
+<div class="row">
+
+    {% for atividade in atividades %}
+
+    <div class="col-md-6 col-lg-4 mb-3">
+
+        <div class="card h-100">
+
+            <div class="card-body">
+
+                <h5 class="card-title">
+
+                    {{ atividade.nome_atividade }}
+
+                    {% if atividade.tipo %}
+
+                    <span class="badge bg-info ms-2">
+                        Obrigatório
+                    </span>
+
+                    {% endif %}
+
+                </h5>
+
+                <p class="text-muted">
+
+                    Criada em: {{ atividade.data_criacao|date:"d/m/Y" }}
+
+                </p>
+
+                <p>
+
+                    <strong>Registros:</strong>
+
+                    {{ atividade.registro_set.count }}
+
+                </p>
+
+                <!-- Botão Registrar -->
+
+                <form method="POST" action="{% url 'registrar_atividade' atividade.id %}">
+
+                    {% csrf_token %}
+
+                    <button type="submit" class="btn btn-primary btn-sm">
+
+                        Registrar Hoje
+
+                    </button>
+
+                </form>
+
+                <!-- Botão excluir -->
+
+                {% if atividade.tipo is None %}
+
+                <button type="button" class="btn btn-danger btn-sm mt-2" data-bs-toggle="modal"
+                    data-bs-target="#modalDeletar{{ atividade.id }}">
+
+                    Excluir
+
+                </button>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- Modal excluir -->
+
+    {% if atividade.tipo is None %}
+
+    <div class="modal fade" id="modalDeletar{{ atividade.id }}" tabindex="-1">
+
+        <div class="modal-dialog">
+
+            <div class="modal-content">
+
+                <div class="modal-header bg-danger text-white">
+
+                    <h5 class="modal-title">
+
+                        Confirmar exclusão
+
+                    </h5>
+
+                    <button type="button" class="btn-close" data-bs-dismiss="modal">
+                    </button>
+
+                </div>
+
+                <div class="modal-body">
+
+                    <p>
+
+                        Tem certeza que deseja deletar a atividade:
+
+                        <strong>{{ atividade.nome_atividade }}</strong> ?
+
+                    </p>
+
+                    <p class="text-danger">
+
+                        Todos os registros dessa atividade serão perdidos.
+
+                    </p>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+
+                        Cancelar
+
+                    </button>
+
+                    <form method="POST" action="{% url 'deletar_atividade' atividade.id %}">
+
+                        {% csrf_token %}
+
+                        <button type="submit" class="btn btn-danger">
+
+                            Sim, deletar
+
+                        </button>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    {% endif %}
+
+    {% endfor %}
+
+</div>
+
+{% else %}
+
+<div class="alert alert-info">
+
+    Você ainda não tem nenhuma atividade.
+
+</div>
+
+{% endif %}
+
+
+
+<!-- Modal Nova Atividade -->
+
+<div class="modal fade" id="modalNovaAtividade" tabindex="-1">
+
+    <div class="modal-dialog">
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+
+                <h5 class="modal-title">
+
+                    Nova Atividade
+
+                </h5>
+
+                <button type="button" class="btn-close" data-bs-dismiss="modal">
+                </button>
+
+            </div>
+
+
+
+            <form method="POST" action="{% url 'criar_atividade' %}">
+
+                {% csrf_token %}
+
+                <div class="modal-body">
+
+                    <div class="mb-3">
+
+                        <label class="form-label">
+
+                            Nome da Atividade
+
+                        </label>
+
+                        <input type="text" name="nome_atividade" class="form-control" maxlength="30" required
+                            pattern="[A-Za-zÀ-ú0-9 ]+" title="Use apenas letras, números e espaços">
+
+                        <small class="text-muted">
+
+                            Máximo 30 caracteres
+
+                        </small>
+
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+
+                        Cancelar
+
+                    </button>
+
+                    <button type="submit" class="btn btn-success">
+
+                        Criar
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

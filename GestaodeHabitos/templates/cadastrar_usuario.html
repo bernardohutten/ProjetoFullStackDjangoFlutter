@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Registrar{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h4>Criar Conta</h4>
+            </div>
+
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label>Usuário</label>
+                       <input type="text" name="username" class="form-control" required maxlength="30">
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Email</label>
+                        <input type="email" name="email" class="form-control" required maxlength="100">
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Senha</label>
+                        <input type="password" name="password" class="form-control" required minlength="6" required maxlength="30">
+                    </div>
+
+                    <button type="submit" class="btn btn-success w-100">
+                        Registrar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

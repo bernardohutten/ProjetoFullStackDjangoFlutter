@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+venv/
+.env
+
+# Django
+db.sqlite3
+media/
+staticfiles/
+
+# VS Code
+.vscode/
+
+# Logs
+*.log
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# PyCharm
+.idea/
+
+# Python cache
+.pytest_cache/
+.mypy_cache/
+
+# Build files
+build/
+dist/
+
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+
+# Android
+android/.gradle/
+android/local.properties
+
+# iOS
+ios/Pods/
+ios/.symlinks/
