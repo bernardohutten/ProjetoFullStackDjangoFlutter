@@ -20,7 +20,9 @@ from .models import (
     Avaliacao,
     Questao,
     Alternativa,
-    RespostaUsuario
+    RespostaUsuario,
+    Tentativa,
+    
 )
 
 # Atividades → atividades do usuário
@@ -482,8 +484,11 @@ def criar_avaliacao(request):
 
         titulo = request.POST.get('titulo')
         tipo = request.POST.get('tipo')
-
+        tentativas_permitidas = request.POST.get('tentativas_permitidas')
         # Validação básica
+       
+          
+
         if not titulo or not tipo:
             messages.error(
                 request,
@@ -508,11 +513,39 @@ def criar_avaliacao(request):
             )
             return redirect('criar_avaliacao')
 
+        if tipo == 'prova':
+
+            if not tentativas_permitidas:
+                messages.error(
+                    request, 'informe o número de tentativas permitidas'
+                )
+                return redirect(criar_avaliacao)
+
+            try:
+                tentativas_permitidas = int(
+                    tentativas_permitidas
+                )
+            except ValueError:
+                messages.error(
+                    request, "O numero de tentativas deve ser um número inteiro"
+                )
+                return redirect(criar_avaliacao)
+
+            if tentativas_permitidas <=0:
+                messages.error(
+                    request,
+                    "o numero de tentativas deve ser maio que zero"
+                )
+                return redirect(criar_avaliacao)
+        else:
+            tentativas_permitidas = None
+
         # Cria a avaliação
         avaliacao = Avaliacao.objects.create(
             titulo=titulo,
             tipo=tipo,
-            professor=request.user
+            professor=request.user,
+            tentativas_permitidas = tentativas_permitidas
         )
 
         messages.success(
@@ -756,6 +789,7 @@ def quiz(request, avaliacao_id):
     )
 
 
+
 # ==========================================
 # ABRIR PROVA PARA RESPONDER
 # ==========================================
@@ -763,27 +797,73 @@ def quiz(request, avaliacao_id):
 @login_required
 def prova(request, avaliacao_id):
 
-    # Busca uma avaliação do tipo prova
+    # ------------------------------------------
+    # Busca a avaliação.
+    #
+    # O tipo precisa obrigatoriamente ser prova.
+    # ------------------------------------------
+
     avaliacao = get_object_or_404(
         Avaliacao,
         id=avaliacao_id,
         tipo='prova'
     )
 
-    # Busca as questões da prova
+    # ------------------------------------------
+    # Conta quantas tentativas o usuário
+    # já realizou nessa prova.
+    # ------------------------------------------
+
+    quantidade_tentativas = Tentativa.objects.filter(
+        usuario=request.user,
+        avaliacao=avaliacao
+    ).count()
+
+    # ------------------------------------------
+    # Verifica se o usuário já atingiu o limite.
+    #
+    # Exemplo:
+    #
+    # permitidas = 3
+    # realizadas = 3
+    #
+    # 3 >= 3
+    # → não pode fazer outra.
+    # ------------------------------------------
+
+    if quantidade_tentativas >= avaliacao.tentativas_permitidas:
+
+        messages.error(
+            request,
+            "Você atingiu o limite de tentativas desta prova."
+        )
+
+        return redirect('listar_provas')
+
+    # ------------------------------------------
+    # Busca as questões da prova.
+    # ------------------------------------------
+
     questoes = Questao.objects.filter(
         avaliacao=avaliacao
     )
+
+    # ------------------------------------------
+    # NÃO criamos a tentativa aqui.
+    #
+    # Vamos criar somente quando o usuário
+    # realmente iniciar a prova.
+    # ------------------------------------------
 
     return render(
         request,
         'atividades/prova.html',
         {
             'avaliacao': avaliacao,
-            'questoes': questoes
+            'questoes': questoes,
+            'tentativas_realizadas': quantidade_tentativas
         }
     )
-
 
 # ==========================================
 # ENVIAR RESPOSTAS DE UMA AVALIAÇÃO

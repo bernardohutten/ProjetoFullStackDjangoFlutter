@@ -95,7 +95,7 @@ urlpatterns = [
     ),
 
     path(
-        'prova/<int:avaliacao_id>/',
+        'prova/<int:avaliacao_id>/<int:tentativa_id>/',
         views.prova,
         name='prova'
     ),
