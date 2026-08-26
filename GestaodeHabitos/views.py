@@ -3,7 +3,7 @@
 # ==========================================
 
 from django.shortcuts import render, redirect, get_object_or_404
-
+from django.utils import timezone
 # render → carrega uma página HTML
 # redirect → redireciona para outra rota
 # get_object_or_404 → busca um objeto no banco; se não achar, retorna erro 404
@@ -816,7 +816,8 @@ def prova(request, avaliacao_id):
 
     quantidade_tentativas = Tentativa.objects.filter(
         usuario=request.user,
-        avaliacao=avaliacao
+        avaliacao=avaliacao,
+  
     ).count()
 
     # ------------------------------------------
@@ -871,27 +872,66 @@ def prova(request, avaliacao_id):
 
 @require_POST
 @login_required
-def responder_avaliacao(request, avaliacao_id):
+def responder_avaliacao(
+    request,
+    avaliacao_id,
+    tentativa_id
+):
 
+    # ------------------------------------------
     # Busca a avaliação
+    # ------------------------------------------
+
     avaliacao = get_object_or_404(
         Avaliacao,
         id=avaliacao_id
     )
 
+    # ------------------------------------------
+    # Busca a tentativa.
+    #
+    # Além do ID, verificamos:
+    #
+    # usuario=request.user
+    #
+    # Isso impede que um usuário envie respostas
+    # usando a tentativa de outro usuário.
+    #
+    # Também verificamos a avaliação para garantir
+    # que a tentativa pertence a esta avaliação.
+    # ------------------------------------------
+
+    tentativa = get_object_or_404(
+        Tentativa,
+        id=tentativa_id,
+        usuario=request.user,
+        avaliacao=avaliacao
+    )
+
+    # ------------------------------------------
     # Busca todas as questões dessa avaliação
+    # ------------------------------------------
+
     questoes = Questao.objects.filter(
         avaliacao=avaliacao
     )
 
-    # Para cada questão da avaliação
+    # ------------------------------------------
+    # Percorre todas as questões
+    # ------------------------------------------
+
     for questao in questoes:
 
-        # Se for múltipla escolha
+        # ======================================
+        # QUESTÃO DE MÚLTIPLA ESCOLHA
+        # ======================================
+
         if questao.tipo == 'multipla':
 
-            # O template deve enviar o nome do input assim:
+            # O template deve enviar:
+            #
             # alternativa_{{ questao.id }}
+            #
             alternativa_id = request.POST.get(
                 f'alternativa_{questao.id}'
             )
@@ -899,15 +939,26 @@ def responder_avaliacao(request, avaliacao_id):
             # Se o usuário respondeu essa questão
             if alternativa_id:
 
+                # Busca a alternativa e garante
+                # que ela realmente pertence à questão
                 alternativa = get_object_or_404(
                     Alternativa,
                     id=alternativa_id,
                     questao=questao
                 )
 
-                # update_or_create evita duplicar resposta
+                # ----------------------------------
+                # Salva a resposta relacionada à
+                # TENTATIVA, e não diretamente
+                # ao usuário.
+                #
+                # Isso permite que o mesmo usuário
+                # tenha respostas diferentes em
+                # diferentes tentativas.
+                # ----------------------------------
+
                 RespostaUsuario.objects.update_or_create(
-                    usuario=request.user,
+                    tentativa=tentativa,
                     questao=questao,
                     defaults={
                         'alternativa': alternativa,
@@ -915,27 +966,50 @@ def responder_avaliacao(request, avaliacao_id):
                     }
                 )
 
-        # Se for questão aberta
+        # ======================================
+        # QUESTÃO ABERTA
+        # ======================================
+
         elif questao.tipo == 'aberta':
 
-            # O template deve enviar o textarea assim:
+            # O template deve enviar:
+            #
             # resposta_{{ questao.id }}
+            #
             resposta_texto = request.POST.get(
                 f'resposta_{questao.id}'
             )
 
             if resposta_texto:
+
                 resposta_texto = resposta_texto.strip()
 
                 if resposta_texto:
+
+                    # Salva a resposta relacionada
+                    # à tentativa atual
                     RespostaUsuario.objects.update_or_create(
-                        usuario=request.user,
+                        tentativa=tentativa,
                         questao=questao,
                         defaults={
                             'alternativa': None,
                             'resposta_texto': resposta_texto
                         }
                     )
+
+    # ------------------------------------------
+    # Marca a tentativa como finalizada
+    # ------------------------------------------
+
+    from django.utils import timezone
+
+    tentativa.finalizada_em = timezone.now()
+
+    tentativa.save()
+
+    # ------------------------------------------
+    # Mensagem de sucesso
+    # ------------------------------------------
 
     messages.success(
         request,

@@ -129,7 +129,7 @@ urlpatterns = [
     # ==========================================
 
     path(
-        'avaliacao/<int:avaliacao_id>/responder/',
+        'avaliacao/<int:avaliacao_id>/tentativa/<int:tentativa_id>/responder/',
         views.responder_avaliacao,
         name='responder_avaliacao'
     ),
